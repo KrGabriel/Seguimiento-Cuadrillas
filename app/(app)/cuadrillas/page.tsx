@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { DataTable } from "@/components/data-table";
+import { ExportCsvButton } from "@/components/export-csv-button";
+import { Pagination } from "@/components/pagination";
 import { Badge } from "@/components/ui/badge";
 import { getCuadrillas, getMetricas, getTecnicos } from "@/lib/queries";
-import { finMes, getParam, inicioMes, mesActual, porcentaje } from "@/lib/utils";
+import { finMes, getParam, inicioMes, mesActual, paginar, parsePage, porcentaje } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -59,17 +61,34 @@ export default async function CuadrillasPage({
     };
   });
 
+  const pagina = paginar(rows, parsePage(getParam(params, "page")), 12);
+
   return (
     <>
       <PageHeader
         title="Cuadrillas"
         description="Gestión de cuadrillas y estado de su vehículo: mantenimiento, limpieza y herramientas."
         actions={
-          <Button asChild>
+          <>
+            <ExportCsvButton
+              filename="cuadrillas"
+              rows={rows}
+              columns={[
+                { key: "nombre", label: "Cuadrilla" },
+                { key: "vehiculo", label: "Vehículo" },
+                { key: "estado", label: "Estado vehículo" },
+                { key: "activa", label: "Vigencia" },
+                { key: "tecnicos", label: "Técnicos activos" },
+                { key: "ordenes", label: "Órdenes del mes" },
+                { key: "cumplimiento", label: "Cumplimiento (%)" },
+              ]}
+            />
+            <Button asChild>
             <Link href="/cuadrillas/nueva">
               <Plus /> Nueva cuadrilla
             </Link>
           </Button>
+          </>
         }
       />
 
@@ -139,7 +158,17 @@ export default async function CuadrillasPage({
               { key: "ordenes", label: "Órdenes mes", kind: "number", align: "right" },
               { key: "cumplimiento", label: "Cumplimiento", kind: "percent", align: "right" },
             ]}
-            rows={rows}
+            rows={pagina.items}
+          />
+          <Pagination
+            page={pagina.page}
+            totalPages={pagina.totalPages}
+            total={pagina.total}
+            desde={pagina.desde}
+            hasta={pagina.hasta}
+            basePath="/cuadrillas"
+            searchParams={params}
+            etiqueta="cuadrillas"
           />
         </CardContent>
       </Card>

@@ -93,6 +93,7 @@ export async function crearIncumplimiento(data: unknown): Promise<Resultado> {
   const { error } = await supabase.from("incumplimientos").insert({
     ...parsed.data,
     descripcion: vacioANull(parsed.data.descripcion),
+    evidencia_url: vacioANull(parsed.data.evidencia_url),
   });
   if (error) return { ok: false, error: errorAmigable(error.message) };
 
@@ -134,6 +135,7 @@ export async function crearEquipo(data: unknown): Promise<Resultado> {
     ...parsed.data,
     marca_modelo: vacioANull(parsed.data.marca_modelo),
     numero_serie: parsed.data.numero_serie.trim().toUpperCase(),
+    evidencia_url: vacioANull(parsed.data.evidencia_url),
   });
   if (error) return { ok: false, error: errorAmigable(error.message) };
 
@@ -310,6 +312,7 @@ export async function actualizarIncumplimiento(id: string, data: unknown): Promi
     .update({
       ...parsed.data,
       descripcion: vacioANull(parsed.data.descripcion),
+      evidencia_url: vacioANull(parsed.data.evidencia_url),
     })
     .eq("id", id);
   if (error) return { ok: false, error: errorAmigable(error.message) };
@@ -381,6 +384,7 @@ export async function actualizarEquipo(id: string, data: unknown): Promise<Resul
       ...parsed.data,
       marca_modelo: vacioANull(parsed.data.marca_modelo),
       numero_serie: parsed.data.numero_serie.trim().toUpperCase(),
+      evidencia_url: vacioANull(parsed.data.evidencia_url),
     })
     .eq("id", id);
   if (error) return { ok: false, error: errorAmigable(error.message) };
@@ -396,6 +400,89 @@ export async function eliminarEquipo(id: string): Promise<Resultado> {
   }
   const supabase = await createClient();
   const { error } = await supabase.from("movimientos_equipos").delete().eq("id", id);
+  if (error) return { ok: false, error: errorAmigable(error.message) };
+  revalidar();
+  return { ok: true };
+}
+
+export async function eliminarTecnicoDefinitivo(id: string): Promise<Resultado> {
+  if (!supabaseConfigurado) {
+    revalidar();
+    return { ok: true, demo: true };
+  }
+  const supabase = await createClient();
+  const [registros, faltas, equipos] = await Promise.all([
+    supabase
+      .from("registros_diarios_tecnicos")
+      .select("id", { count: "exact", head: true })
+      .eq("tecnico_id", id),
+    supabase
+      .from("incumplimientos")
+      .select("id", { count: "exact", head: true })
+      .eq("tecnico_id", id),
+    supabase
+      .from("movimientos_equipos")
+      .select("id", { count: "exact", head: true })
+      .eq("tecnico_id", id),
+  ]);
+
+  const historial = (registros.count ?? 0) + (faltas.count ?? 0) + (equipos.count ?? 0);
+  if (historial > 0) {
+    return {
+      ok: false,
+      error: `No se puede eliminar: el técnico tiene ${historial} registro(s) histórico(s). Usa la baja lógica.`,
+    };
+  }
+
+  const { error } = await supabase.from("tecnicos").delete().eq("id", id);
+  if (error) return { ok: false, error: errorAmigable(error.message) };
+  revalidar();
+  return { ok: true };
+}
+
+export async function eliminarCuadrillaDefinitiva(id: string): Promise<Resultado> {
+  if (!supabaseConfigurado) {
+    revalidar();
+    return { ok: true, demo: true };
+  }
+  const supabase = await createClient();
+  const [registros, faltas, equipos, metricas, tecnicos] = await Promise.all([
+    supabase
+      .from("registros_diarios_tecnicos")
+      .select("id", { count: "exact", head: true })
+      .eq("cuadrilla_id", id),
+    supabase
+      .from("incumplimientos")
+      .select("id", { count: "exact", head: true })
+      .eq("cuadrilla_id", id),
+    supabase
+      .from("movimientos_equipos")
+      .select("id", { count: "exact", head: true })
+      .eq("cuadrilla_id", id),
+    supabase
+      .from("metricas_cuadrilla_diaria")
+      .select("id", { count: "exact", head: true })
+      .eq("cuadrilla_id", id),
+    supabase
+      .from("tecnicos")
+      .select("id", { count: "exact", head: true })
+      .eq("cuadrilla_actual_id", id),
+  ]);
+
+  const historial =
+    (registros.count ?? 0) +
+    (faltas.count ?? 0) +
+    (equipos.count ?? 0) +
+    (metricas.count ?? 0) +
+    (tecnicos.count ?? 0);
+  if (historial > 0) {
+    return {
+      ok: false,
+      error: `No se puede eliminar: la cuadrilla tiene ${historial} registro(s) o técnico(s) asociado(s). Desactívala en su lugar.`,
+    };
+  }
+
+  const { error } = await supabase.from("cuadrillas").delete().eq("id", id);
   if (error) return { ok: false, error: errorAmigable(error.message) };
   revalidar();
   return { ok: true };

@@ -6,8 +6,10 @@ import { KpiCard } from "@/components/kpi-card";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table";
+import { ExportCsvButton } from "@/components/export-csv-button";
+import { Pagination } from "@/components/pagination";
 import { getCuadrillas, getIncumplimientos, getTecnicos } from "@/lib/queries";
-import { finMes, getParam, inicioMes, mesActual, numero } from "@/lib/utils";
+import { finMes, getParam, inicioMes, mesActual, numero, paginar, parsePage } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -46,12 +48,15 @@ export default async function IncumplimientosPage({
     tecnico: i.tecnico?.nombre_completo ?? "—",
     cuadrilla: i.cuadrilla?.nombre ?? "—",
     gravedad: i.gravedad,
-    descripcion: i.descripcion ?? "—",
+    descripcion: i.descripcion ?? "-",
+    evidencia: i.evidencia_url ?? "",
   }));
 
   const graves = filtrados.filter((i) => i.gravedad === "Grave").length;
   const moderadas = filtrados.filter((i) => i.gravedad === "Moderada").length;
   const leves = filtrados.filter((i) => i.gravedad === "Leve").length;
+
+  const pagina = paginar(rows, parsePage(getParam(params, "page")), 15);
 
   return (
     <>
@@ -59,11 +64,25 @@ export default async function IncumplimientosPage({
         title="Incumplimientos"
         description="Listado global de eventos con filtros por técnico, cuadrilla, tipo y gravedad. Haz clic en el tipo para corregir o eliminar."
         actions={
-          <Button asChild>
+          <>
+            <ExportCsvButton
+              filename="incumplimientos"
+              rows={rows}
+              columns={[
+                { key: "fecha", label: "Fecha" },
+                { key: "tipo", label: "Tipo de incumplimiento" },
+                { key: "tecnico", label: "Técnico" },
+                { key: "cuadrilla", label: "Cuadrilla" },
+                { key: "gravedad", label: "Gravedad" },
+                { key: "descripcion", label: "Descripción" },
+              ]}
+            />
+            <Button asChild>
             <Link href="/carga/incumplimiento">
               <Plus /> Registrar incumplimiento
             </Link>
           </Button>
+          </>
         }
       />
 
@@ -116,9 +135,20 @@ export default async function IncumplimientosPage({
               { key: "cuadrilla", label: "Cuadrilla" },
               { key: "gravedad", label: "Gravedad", kind: "badge", align: "center", width: "105px" },
               { key: "descripcion", label: "Descripción" },
+              { key: "evidencia", label: "Evidencia", kind: "external", align: "center", width: "90px" },
             ]}
-            rows={rows}
+            rows={pagina.items}
             emptyMessage="Sin incumplimientos para los filtros seleccionados."
+          />
+          <Pagination
+            page={pagina.page}
+            totalPages={pagina.totalPages}
+            total={pagina.total}
+            desde={pagina.desde}
+            hasta={pagina.hasta}
+            basePath="/incumplimientos"
+            searchParams={params}
+            etiqueta="incumplimientos"
           />
         </CardContent>
       </Card>

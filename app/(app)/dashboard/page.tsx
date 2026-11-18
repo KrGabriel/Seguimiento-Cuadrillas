@@ -1,6 +1,9 @@
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowUpRight,
+  CheckCircle2,
+  ChevronRight,
   ClipboardCheck,
   PackageCheck,
   ShieldAlert,
@@ -15,8 +18,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getCuadrillas, getIncumplimientos, getMetricas, getMovimientos, getRegistrosDiarios } from "@/lib/queries";
-import { calcularKpis, comparativoCuadrillas, tendenciaMensual } from "@/lib/analytics";
+import { getCuadrillas, getIncumplimientos, getMetricas, getMovimientos, getRegistrosDiarios, getTecnicos } from "@/lib/queries";
+import { calcularKpis, comparativoCuadrillas, generarAlertas, tendenciaMensual } from "@/lib/analytics";
 import {
   finMes,
   formatFecha,
@@ -48,12 +51,13 @@ export default async function DashboardPage({
   const hasta = finMes(mes);
   const desdeTendencia = inicioMes(restarMeses(mes, 5));
 
-  const [registrosHist, incumplimientosHist, movimientos, metricas, cuadrillas] = await Promise.all([
+  const [registrosHist, incumplimientosHist, movimientos, metricas, cuadrillas, tecnicos] = await Promise.all([
     getRegistrosDiarios({ desde: desdeTendencia, hasta }),
     getIncumplimientos({ desde: desdeTendencia, hasta }),
     getMovimientos(),
     getMetricas({ desde, hasta }),
     getCuadrillas(),
+    getTecnicos(),
   ]);
 
   const registros = registrosHist.filter((r) => r.fecha >= desde && r.fecha <= hasta);
@@ -65,6 +69,14 @@ export default async function DashboardPage({
   const kpis = calcularKpis(registros, incumplimientos, metricas, movimientosMes);
   const tendencia = tendenciaMensual(registrosHist, incumplimientosHist, movimientos, 6, mes);
   const comparativo = comparativoCuadrillas(cuadrillas, metricas, registros, incumplimientos);
+  const alertas = generarAlertas({
+    cuadrillas,
+    tecnicos,
+    registros: registrosHist,
+    incumplimientos: incumplimientosHist,
+    metricas,
+    movimientos,
+  });
 
   const barData = comparativo.map((f) => ({
     cuadrilla: f.cuadrilla.replace("Cuadrilla ", ""),
@@ -151,6 +163,49 @@ export default async function DashboardPage({
           accent="info"
         />
       </div>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle>Alertas operativas</CardTitle>
+            <CardDescription>Puntos que requieren atención en los últimos 30 días.</CardDescription>
+          </div>
+          <Badge variant={alertas.length ? "warning" : "success"}>{alertas.length} alerta(s)</Badge>
+        </CardHeader>
+        <CardContent>
+          {alertas.length === 0 ? (
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <CheckCircle2 className="size-4 text-emerald-400" /> Sin alertas: la operación está al día.
+            </p>
+          ) : (
+            <ul className="grid gap-2 md:grid-cols-2">
+              {alertas.map((alerta) => (
+                <li key={alerta.id}>
+                  <Link
+                    href={alerta.href ?? "/dashboard"}
+                    className="flex items-start gap-3 rounded-md border border-border/70 p-3 transition-colors hover:bg-accent"
+                  >
+                    <AlertTriangle
+                      className={
+                        alerta.nivel === "danger"
+                          ? "mt-0.5 size-4 shrink-0 text-red-400"
+                          : alerta.nivel === "warning"
+                            ? "mt-0.5 size-4 shrink-0 text-amber-400"
+                            : "mt-0.5 size-4 shrink-0 text-sky-400"
+                      }
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-medium text-foreground">{alerta.titulo}</span>
+                      <span className="mt-0.5 block text-[11px] text-muted-foreground">{alerta.detalle}</span>
+                    </span>
+                    <ChevronRight className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">

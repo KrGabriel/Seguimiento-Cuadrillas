@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { fechaHoy } from "@/lib/utils";
 import { Field, FormMessage } from "@/components/forms/form-field";
+import { EliminarDefinitivoButton } from "@/components/eliminar-definitivo-button";
 import { actualizarTecnico, crearTecnico } from "@/lib/actions";
 import { tecnicoSchema, type TecnicoInput } from "@/lib/schemas";
 import type { Cuadrilla, Tecnico } from "@/lib/types";
@@ -136,14 +137,26 @@ export function TecnicoForm({
         </p>
       ) : null}
 
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={() => router.push("/tecnicos")}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={formState.isSubmitting}>
-          {formState.isSubmitting ? <Loader2 className="animate-spin" /> : <Save />}
-          {tecnico ? "Guardar cambios" : "Crear técnico"}
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {tecnico ? (
+          <EliminarDefinitivoButton
+            tipo="tecnico"
+            id={tecnico.id}
+            nombre={tecnico.nombre_completo}
+            redirectTo="/tecnicos"
+          />
+        ) : (
+          <span />
+        )}
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="ghost" onClick={() => router.push("/tecnicos")}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={formState.isSubmitting}>
+            {formState.isSubmitting ? <Loader2 className="animate-spin" /> : <Save />}
+            {tecnico ? "Guardar cambios" : "Crear técnico"}
+          </Button>
+        </div>
       </div>
     </form>
   );

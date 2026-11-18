@@ -92,3 +92,26 @@ export function getParam(
   const value = params[key];
   return Array.isArray(value) ? value[0] : value;
 }
+
+export function parsePage(value: string | undefined, totalPages = 1) {
+  const parsed = Number.parseInt(value ?? "1", 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return totalPages > 0 ? Math.min(parsed, totalPages) : 1;
+}
+
+export function paginar<T>(items: T[], page: number, pageSize = 15) {
+  const total = items.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const pagina = parsePage(String(page), totalPages);
+  const inicio = total === 0 ? 0 : (pagina - 1) * pageSize;
+  const fin = Math.min(inicio + pageSize, total);
+  return {
+    items: items.slice(inicio, inicio + pageSize),
+    page: pagina,
+    totalPages,
+    total,
+    desde: total === 0 ? 0 : inicio + 1,
+    hasta: fin,
+  };
+}
+

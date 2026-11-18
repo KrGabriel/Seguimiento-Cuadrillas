@@ -14,7 +14,7 @@ export type TableColumn = {
   key: string;
   label: string;
   align?: "left" | "right" | "center";
-  kind?: "text" | "number" | "percent" | "date" | "badge" | "link";
+  kind?: "text" | "number" | "percent" | "date" | "datetime" | "badge" | "link" | "external";
   linkPrefix?: string;
   linkKey?: string;
   width?: string;
@@ -25,8 +25,10 @@ function badgeVariant(value: string) {
   if (["operativo", "activo", "activa", "baja definitiva"].includes(v)) return "success" as const;
   if (["mantenimiento", "limpieza", "herramientas", "leve", "para revisión"].includes(v))
     return "warning" as const;
-  if (["dañado", "grave", "inactivo", "inactiva"].includes(v)) return "destructive" as const;
-  if (["moderada", "laboratorio/reparación"].includes(v)) return "info" as const;
+  if (["dañado", "grave", "inactivo", "inactiva", "eliminar", "delete"].includes(v))
+    return "destructive" as const;
+  if (["moderada", "laboratorio/reparación", "actualizar", "update"].includes(v)) return "info" as const;
+  if (["insertar", "insert"].includes(v)) return "success" as const;
   return "secondary" as const;
 }
 
@@ -78,8 +80,25 @@ export function DataTable({
       return <Badge variant={badgeVariant(String(value))}>{String(value)}</Badge>;
     }
     if (col.kind === "date") return formatFecha(String(value));
+    if (col.kind === "datetime")
+      return new Date(String(value)).toLocaleString("es-CO", {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
     if (col.kind === "number") return new Intl.NumberFormat("es-CO").format(Number(value));
     if (col.kind === "percent") return `${Number(value).toFixed(1)}%`;
+    if (col.kind === "external") {
+      return (
+        <a
+          href={String(value)}
+          target="_blank"
+          rel="noreferrer"
+          className="font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Ver
+        </a>
+      );
+    }
     if (col.kind === "link") {
       const id = row[col.linkKey ?? "id"];
       return (
@@ -95,6 +114,7 @@ export function DataTable({
   }
 
   return (
+    <div className="w-full overflow-x-auto">
     <Table>
       <TableHeader>
         <TableRow>
@@ -102,6 +122,9 @@ export function DataTable({
             <TableHead
               key={col.key}
               style={col.width ? { width: col.width } : undefined}
+              aria-sort={
+                sort.key === col.key ? (sort.dir === "asc" ? "ascending" : "descending") : "none"
+              }
               className={cn(
                 col.align === "right" && "text-right",
                 col.align === "center" && "text-center",
@@ -110,6 +133,7 @@ export function DataTable({
               <button
                 type="button"
                 onClick={() => toggle(col.key)}
+                aria-label={`Ordenar por ${col.label}`}
                 className={cn(
                   "inline-flex items-center gap-1 transition-colors hover:text-foreground",
                   col.align === "right" && "flex-row-reverse",
@@ -156,5 +180,6 @@ export function DataTable({
         )}
       </TableBody>
     </Table>
+    </div>
   );
 }

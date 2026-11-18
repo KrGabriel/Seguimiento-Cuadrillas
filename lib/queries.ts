@@ -9,6 +9,7 @@ import {
   demoTecnicos,
 } from "@/lib/demo";
 import type {
+  Auditoria,
   Cuadrilla,
   Incumplimiento,
   IncumplimientoDetalle,
@@ -16,6 +17,7 @@ import type {
   MetricaCuadrillaDetalle,
   MovimientoEquipo,
   MovimientoEquipoDetalle,
+  Perfil,
   RegistroDiario,
   RegistroDiarioDetalle,
   Tecnico,
@@ -240,4 +242,74 @@ export async function getEquipoPorId(id: string): Promise<MovimientoEquipo | nul
     .eq("id", id)
     .maybeSingle();
   return (data as MovimientoEquipo | null) ?? null;
+}
+
+export async function getAuditoria(limite = 150): Promise<Auditoria[]> {
+  if (!supabaseConfigurado) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("auditoria")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limite);
+  if (error) return [];
+  return (data ?? []) as Auditoria[];
+}
+
+export async function getPerfilActual(): Promise<Perfil | null> {
+  if (!supabaseConfigurado) {
+    return {
+      id: "demo",
+      email: "demo@cuadrillas.local",
+      nombre: "Administrador de demostración",
+      rol: "Administrador",
+      activo: true,
+      created_at: new Date().toISOString(),
+    };
+  }
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("perfiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (data) return data as Perfil;
+
+  return {
+    id: user.id,
+    email: user.email ?? "",
+    nombre: user.email ?? "Administrador",
+    rol: "Administrador",
+    activo: true,
+    created_at: user.created_at ?? new Date().toISOString(),
+  };
+}
+
+export async function getPerfiles(): Promise<Perfil[]> {
+  if (!supabaseConfigurado) {
+    return [
+      {
+        id: "demo",
+        email: "demo@cuadrillas.local",
+        nombre: "Administrador de demostración",
+        rol: "Administrador",
+        activo: true,
+        created_at: new Date().toISOString(),
+      },
+    ];
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("perfiles")
+    .select("*")
+    .order("rol")
+    .order("email");
+  if (error) lanzarErrorConsulta(error.message);
+  return (data ?? []) as Perfil[];
 }

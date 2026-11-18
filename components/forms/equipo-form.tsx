@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/select";
 import { fechaHoy } from "@/lib/utils";
 import { Field, FormMessage } from "@/components/forms/form-field";
 import { EliminarRegistroButton } from "@/components/eliminar-registro-button";
+import { EvidenciaField } from "@/components/evidencia-field";
 import { actualizarEquipo, crearEquipo } from "@/lib/actions";
 import { equipoSchema, type EquipoInput } from "@/lib/schemas";
 import {
@@ -48,6 +49,7 @@ export function EquipoForm({
       numero_serie: registro?.numero_serie ?? "",
       estado_recepcion: registro?.estado_recepcion ?? "Operativo",
       destino_equipo: registro?.destino_equipo ?? "Stock disponible",
+    evidencia_url: registro?.evidencia_url ?? "",
     },
   });
 
@@ -184,6 +186,14 @@ export function EquipoForm({
                 </option>
               ))}
             </Select>
+          </Field>
+          <Field label="Evidencia (opcional)" className="sm:col-span-2 lg:col-span-3">
+            <EvidenciaField
+              value={form.watch("evidencia_url")}
+              onChange={(url) =>
+                setValue("evidencia_url", url ?? "", { shouldDirty: true, shouldValidate: true })
+              }
+            />
           </Field>
         </CardContent>
       </Card>

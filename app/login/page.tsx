@@ -1,4 +1,5 @@
 import { Activity, BarChart3, ShieldCheck, Users } from "lucide-react";
+import Link from "next/link";
 import { LoginForm } from "./login-form";
 import { EMPRESA_NOMBRE, supabaseConfigurado } from "@/lib/env";
 
@@ -73,6 +74,12 @@ export default function LoginPage() {
           </p>
 
           <LoginForm />
+
+          <p className="mt-4 text-center text-[11px] text-muted-foreground">
+            <Link href="/recuperar" className="underline-offset-4 hover:text-foreground hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </p>
 
           <p className="mt-6 text-center text-[11px] leading-relaxed text-muted-foreground">
             Solo usuarios autenticados. Las rutas y políticas RLS están protegidas.

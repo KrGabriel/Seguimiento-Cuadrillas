@@ -4,6 +4,7 @@ import { FiltersBar } from "@/components/filters-bar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/data-table";
+import { ExportCsvButton } from "@/components/export-csv-button";
 import { ExportPdfButton } from "@/components/export-pdf-button";
 import { RadarEvaluacion } from "@/components/charts/radar-evaluacion";
 import { TecnicoSerieChart } from "@/components/charts/tecnico-serie-chart";
@@ -77,12 +78,30 @@ export default async function InformeTecnicosPage({
         description="Evaluación de actitud, rendimiento, incumplimientos y ficha técnica descargable."
         actions={
           ficha ? (
-            <ExportPdfButton
-              tipo="ficha"
-              ficha={ficha}
-              periodo={periodo}
-              label="Exportar ficha técnica a PDF"
-            />
+            <>
+              <ExportCsvButton
+                filename={`incumplimientos-${ficha.tecnico.legajo}`}
+                rows={ficha.incumplimientos.map((i) => ({
+                  fecha: i.fecha,
+                  tipo: i.tipo_incumplimiento,
+                  gravedad: i.gravedad,
+                  descripcion: i.descripcion ?? "",
+                }))}
+                columns={[
+                  { key: "fecha", label: "Fecha" },
+                  { key: "tipo", label: "Tipo" },
+                  { key: "gravedad", label: "Gravedad" },
+                  { key: "descripcion", label: "Descripción" },
+                ]}
+                label="Incumplimientos CSV"
+              />
+              <ExportPdfButton
+                tipo="ficha"
+                ficha={ficha}
+                periodo={periodo}
+                label="Exportar ficha técnica a PDF"
+              />
+            </>
           ) : null
         }
       />

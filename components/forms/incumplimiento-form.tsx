@@ -13,6 +13,7 @@ import { fechaHoy } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { Field, FormMessage } from "@/components/forms/form-field";
 import { EliminarRegistroButton } from "@/components/eliminar-registro-button";
+import { EvidenciaField } from "@/components/evidencia-field";
 import { actualizarIncumplimiento, crearIncumplimiento } from "@/lib/actions";
 import { incumplimientoSchema, type IncumplimientoInput } from "@/lib/schemas";
 import {
@@ -45,6 +46,7 @@ export function IncumplimientoForm({
       tipo_incumplimiento: registro?.tipo_incumplimiento ?? TIPOS_INCUMPLIMIENTO[0],
       gravedad: registro?.gravedad ?? "Leve",
       descripcion: registro?.descripcion ?? "",
+      evidencia_url: registro?.evidencia_url ?? "",
     },
   });
 
@@ -155,6 +157,14 @@ export function IncumplimientoForm({
               id="descripcion"
               placeholder="Describe brevemente la situación observada..."
               {...register("descripcion")}
+            />
+          </Field>
+          <Field label="Evidencia (opcional)" className="sm:col-span-2 lg:col-span-3">
+            <EvidenciaField
+              value={form.watch("evidencia_url")}
+              onChange={(url) =>
+                setValue("evidencia_url", url ?? "", { shouldDirty: true, shouldValidate: true })
+              }
             />
           </Field>
         </CardContent>

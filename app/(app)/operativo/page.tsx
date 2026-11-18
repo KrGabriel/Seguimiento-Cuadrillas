@@ -6,8 +6,10 @@ import { KpiCard } from "@/components/kpi-card";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table";
+import { ExportCsvButton } from "@/components/export-csv-button";
+import { Pagination } from "@/components/pagination";
 import { getCuadrillas, getMetricas } from "@/lib/queries";
-import { finMes, getParam, inicioMes, mesActual, numero, porcentaje } from "@/lib/utils";
+import { finMes, getParam, inicioMes, mesActual, numero, paginar, parsePage, porcentaje } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -52,17 +54,37 @@ export default async function OperativoPage({
   const utilizados = filtradas.reduce((a, m) => a + m.materiales_utilizados, 0);
   const recuperados = filtradas.reduce((a, m) => a + m.materiales_recuperados, 0);
 
+  const pagina = paginar(rows, parsePage(getParam(params, "page")), 15);
+
   return (
     <>
       <PageHeader
         title="Control operativo diario"
         description="Auditoría de órdenes, reclamos y balance de materiales por cuadrilla. Haz clic en la cuadrilla para editar o eliminar el registro."
         actions={
-          <Button asChild>
+          <>
+            <ExportCsvButton
+              filename="control-operativo"
+              rows={rows}
+              columns={[
+                { key: "fecha", label: "Fecha" },
+                { key: "cuadrilla", label: "Cuadrilla" },
+                { key: "asignadas", label: "Asignadas" },
+                { key: "finalizadas", label: "Finalizadas" },
+                { key: "pendientes", label: "Pendientes" },
+                { key: "reclamos", label: "Reclamos" },
+                { key: "utilizados", label: "Materiales utilizados" },
+                { key: "recuperados", label: "Materiales recuperados" },
+                { key: "cumplimiento", label: "Cumplimiento (%)" },
+                { key: "vehiculo", label: "Vehículo" },
+              ]}
+            />
+            <Button asChild>
             <Link href="/carga/operativo">
               <Plus /> Nuevo control
             </Link>
           </Button>
+          </>
         }
       />
 
@@ -133,8 +155,18 @@ export default async function OperativoPage({
               { key: "cumplimiento", label: "Cumplimiento", kind: "percent", align: "right" },
               { key: "vehiculo", label: "Vehículo", kind: "badge", align: "center" },
             ]}
-            rows={rows}
+            rows={pagina.items}
             emptyMessage="Sin controles operativos para los filtros seleccionados."
+          />
+          <Pagination
+            page={pagina.page}
+            totalPages={pagina.totalPages}
+            total={pagina.total}
+            desde={pagina.desde}
+            hasta={pagina.hasta}
+            basePath="/operativo"
+            searchParams={params}
+            etiqueta="registros"
           />
         </CardContent>
       </Card>

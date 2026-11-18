@@ -9,18 +9,21 @@ import {
   ClipboardCheck,
   ClipboardList,
   FileBarChart,
+  History,
   LayoutDashboard,
   LogOut,
   Menu,
   PackageSearch,
   ShieldAlert,
   Truck,
+  UserCog,
   Users,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { cerrarSesion } from "@/lib/actions";
+import type { RolUsuario } from "@/lib/types";
 
 const grupos = [
   {
@@ -47,17 +50,31 @@ const grupos = [
   },
 ];
 
+const grupoAdministracion = {
+  titulo: "Administración",
+  items: [
+    { href: "/usuarios", label: "Usuarios y roles", icon: UserCog },
+    { href: "/auditoria", label: "Auditoría", icon: History },
+  ],
+};
+
 export function AppShell({
   children,
   userEmail,
+  rol,
+  nombre,
   demo,
 }: {
   children: React.ReactNode;
   userEmail?: string | null;
+  rol?: RolUsuario;
+  nombre?: string | null;
   demo: boolean;
 }) {
   const pathname = usePathname();
   const [abierto, setAbierto] = useState(false);
+  const gruposVisibles =
+    rol === "Administrador" ? [...grupos, grupoAdministracion] : grupos;
 
   const nav = (
     <div className="flex h-full flex-col">
@@ -73,8 +90,8 @@ export function AppShell({
         </div>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
-        {grupos.map((grupo) => (
+      <nav aria-label="Navegación principal" className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+        {gruposVisibles.map((grupo) => (
           <div key={grupo.titulo}>
             <p className="mb-2 px-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">
               {grupo.titulo}
@@ -117,8 +134,8 @@ export function AppShell({
             {(userEmail ?? "AD").slice(0, 2).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-medium">{userEmail ?? "Administrador"}</p>
-            <p className="text-[10px] text-muted-foreground">Administrador</p>
+            <p className="truncate text-xs font-medium">{nombre || userEmail || "Administrador"}</p>
+            <p className="text-[10px] text-muted-foreground">{rol ?? "Administrador"}</p>
           </div>
           <form action={cerrarSesion}>
             <button
@@ -136,6 +153,12 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background">
+      <a
+        href="#contenido"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
+      >
+        Saltar al contenido
+      </a>
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 border-r border-border bg-card/40 backdrop-blur lg:block">
         {nav}
       </aside>
@@ -149,6 +172,7 @@ export function AppShell({
           <aside className="absolute inset-y-0 left-0 w-64 border-r border-border bg-card">
             <button
               onClick={() => setAbierto(false)}
+              aria-label="Cerrar menú"
               className="absolute right-3 top-4 rounded-md p-1 text-muted-foreground hover:bg-accent"
             >
               <X className="size-4" />
@@ -163,6 +187,7 @@ export function AppShell({
           <div className="flex items-center gap-3">
             <button
               onClick={() => setAbierto(true)}
+              aria-label="Abrir menú"
               className="rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden"
             >
               <Menu className="size-4" />
@@ -171,7 +196,7 @@ export function AppShell({
               <span className="hidden sm:inline">Administración</span>
               <span className="hidden text-border sm:inline">/</span>
               <span className="text-foreground">
-                {grupos.flatMap((g) => g.items).find((i) => pathname.startsWith(i.href) && i.href !== "/dashboard")?.label ??
+                {gruposVisibles.flatMap((g) => g.items).find((i) => pathname.startsWith(i.href) && i.href !== "/dashboard")?.label ??
                   "Dashboard"}
               </span>
             </div>
@@ -190,7 +215,13 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1440px] space-y-6 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main
+          id="contenido"
+          tabIndex={-1}
+          className="mx-auto w-full max-w-[1440px] space-y-6 p-4 outline-none sm:p-6 lg:p-8"
+        >
+          {children}
+        </main>
       </div>
     </div>
   );

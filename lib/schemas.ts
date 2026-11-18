@@ -45,6 +45,7 @@ export const incumplimientoSchema = z.object({
   tipo_incumplimiento: z.enum(TIPOS_INCUMPLIMIENTO),
   gravedad: z.enum(GRAVEDADES as [string, ...string[]]),
   descripcion: z.string().max(1000).optional().or(z.literal("")),
+  evidencia_url: z.string().url("URL de evidencia inválida").optional().or(z.literal("")),
 });
 
 export type IncumplimientoInput = z.infer<typeof incumplimientoSchema>;
@@ -91,6 +92,7 @@ export const equipoSchema = z.object({
   numero_serie: z.string().min(3, "Ingresa el número de serie"),
   estado_recepcion: z.enum(ESTADOS_RECEPCION as [string, ...string[]]),
   destino_equipo: z.enum(DESTINOS_EQUIPO as [string, ...string[]]),
+  evidencia_url: z.string().url("URL de evidencia inválida").optional().or(z.literal("")),
 });
 
 export type EquipoInput = z.infer<typeof equipoSchema>;

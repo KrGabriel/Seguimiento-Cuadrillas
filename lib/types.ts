@@ -85,6 +85,7 @@ export type Incumplimiento = {
   tipo_incumplimiento: TipoIncumplimiento;
   gravedad: GravedadIncumplimiento;
   descripcion: string | null;
+  evidencia_url?: string | null;
 };
 
 export type IncumplimientoDetalle = Incumplimiento & {
@@ -121,6 +122,7 @@ export type MovimientoEquipo = {
   numero_serie: string;
   estado_recepcion: EstadoRecepcion;
   destino_equipo: DestinoEquipo;
+  evidencia_url?: string | null;
 };
 
 export type MovimientoEquipoDetalle = MovimientoEquipo & {
@@ -128,11 +130,36 @@ export type MovimientoEquipoDetalle = MovimientoEquipo & {
   cuadrilla: ReferenciaCuadrilla | null;
 };
 
-export type EvaluacionPromedio = {
-  puntualidad: number;
+export type EvaluacionPromedio = {  puntualidad: number;
   uniforme: number;
   responsabilidad: number;
   cumplimiento_tareas: number;
   companerismo: number;
   comunicacion_supervision: number;
 };
+
+export type OperacionAuditoria = "INSERT" | "UPDATE" | "DELETE";
+
+export type Auditoria = {
+  id: number;
+  tabla: string;
+  operacion: OperacionAuditoria;
+  registro_id: string | null;
+  usuario_id: string | null;
+  usuario_email: string | null;
+  datos: unknown;
+  created_at: string;
+};
+
+export type RolUsuario = "Administrador" | "Supervisor";
+
+export type Perfil = {
+  id: string;
+  email: string;
+  nombre: string | null;
+  rol: RolUsuario;
+  activo: boolean;
+  created_at: string;
+  ultimo_acceso?: string | null;
+};
+

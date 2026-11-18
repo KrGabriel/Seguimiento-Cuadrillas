@@ -32,8 +32,9 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const esLogin = path === "/login";
+  const esPublica = ["/login", "/recuperar", "/actualizar-password", "/offline"].includes(path);
 
-  if (!user && !esLogin) {
+  if (!user && !esPublica) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", path);

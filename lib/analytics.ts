@@ -7,7 +7,7 @@ import type {
   RegistroDiarioDetalle,
   Tecnico,
 } from "@/lib/types";
-import { clamp, mesLabel, nombreMes, promedio } from "@/lib/utils";
+import { clamp, fechaHaceDias, mesLabel, nombreMes, promedio } from "@/lib/utils";
 
 export type KpisDashboard = {
   instalaciones: number;
@@ -346,8 +346,126 @@ export function calcularFichaTecnica(
   };
 }
 
-export function etiquetaPeriodo(desde: string, hasta: string) {
-  const d = new Date(`${desde}T12:00:00`);
+export type AlertaOperativa = {
+  id: string;
+  nivel: "danger" | "warning" | "info";
+  titulo: string;
+  detalle: string;
+  href?: string;
+};
+
+export function generarAlertas({
+  cuadrillas,
+  tecnicos,
+  registros,
+  incumplimientos,
+  metricas,
+  movimientos,
+  dias = 30,
+}: {
+  cuadrillas: Cuadrilla[];
+  tecnicos: Tecnico[];
+  registros: RegistroDiarioDetalle[];
+  incumplimientos: IncumplimientoDetalle[];
+  metricas: MetricaCuadrillaDetalle[];
+  movimientos: MovimientoEquipoDetalle[];
+  dias?: number;
+}): AlertaOperativa[] {
+  const desde = fechaHaceDias(dias);
+  const alertas: AlertaOperativa[] = [];
+
+  const graves = incumplimientos.filter((i) => i.fecha >= desde && i.gravedad === "Grave");
+  if (graves.length) {
+    alertas.push({
+      id: "graves",
+      nivel: "danger",
+      titulo: `${graves.length} incumplimiento(s) grave(s)`,
+      detalle: `Registrados en los últimos ${dias} días. Revisa el detalle para tomar acciones.`,
+      href: "/incumplimientos?gravedad=Grave",
+    });
+  }
+
+  const porTecnicoTipo = new Map<string, { tecnico: string; tipo: string; total: number }>();
+  for (const falta of incumplimientos.filter((i) => i.fecha >= desde)) {
+    const key = `${falta.tecnico_id}|${falta.tipo_incumplimiento}`;
+    const actual = porTecnicoTipo.get(key) ?? {
+      tecnico: falta.tecnico?.nombre_completo ?? "Técnico",
+      tipo: falta.tipo_incumplimiento,
+      total: 0,
+    };
+    actual.total += 1;
+    porTecnicoTipo.set(key, actual);
+  }
+  const reincidentes = Array.from(porTecnicoTipo.values())
+    .filter((x) => x.total > 1)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 3);
+  if (reincidentes.length) {
+    alertas.push({
+      id: "reincidencia",
+      nivel: "warning",
+      titulo: `${reincidentes.length} caso(s) de reincidencia`,
+      detalle: reincidentes.map((x) => `${x.tecnico}: ${x.tipo} (${x.total})`).join(" · "),
+      href: "/informes/tecnicos",
+    });
+  }
+
+  const vehiculos = cuadrillas.filter((c) => c.activa && c.estado_vehiculo !== "Operativo");
+  if (vehiculos.length) {
+    alertas.push({
+      id: "vehiculos",
+      nivel: "warning",
+      titulo: `${vehiculos.length} cuadrilla(s) con vehículo fuera de servicio`,
+      detalle: vehiculos.map((c) => `${c.nombre}: ${c.estado_vehiculo}`).join(" · "),
+      href: "/cuadrillas",
+    });
+  }
+
+  const pendientes = metricas.reduce((acc, m) => acc + m.ordenes_pendientes, 0);
+  if (pendientes > 15) {
+    alertas.push({
+      id: "pendientes",
+      nivel: "warning",
+      titulo: `${pendientes} órdenes pendientes acumuladas`,
+      detalle: "El volumen de trabajo sin cerrar puede afectar la promesa de servicio.",
+      href: "/operativo",
+    });
+  }
+
+  const sinParte = tecnicos.filter(
+    (t) => t.activo && !registros.some((r) => r.tecnico_id === t.id && r.fecha >= fechaHaceDias(7)),
+  );
+  if (sinParte.length) {
+    alertas.push({
+      id: "sin-parte",
+      nivel: "info",
+      titulo: `${sinParte.length} técnico(s) activo(s) sin parte en 7 días`,
+      detalle: sinParte
+        .slice(0, 4)
+        .map((t) => t.nombre_completo)
+        .join(", "),
+      href: "/tecnicos",
+    });
+  }
+
+  const danados = movimientos.filter(
+    (m) => m.fecha_recuperacion >= desde && m.estado_recepcion === "Dañado",
+  );
+  if (danados.length) {
+    alertas.push({
+      id: "equipos-danados",
+      nivel: "info",
+      titulo: `${danados.length} equipo(s) dañado(s) recuperado(s)`,
+      detalle: "Verifica el destino en el manifiesto de equipos.",
+      href: "/informes/equipos?estado=Dañado",
+    });
+  }
+
+  const orden: Record<AlertaOperativa["nivel"], number> = { danger: 0, warning: 1, info: 2 };
+  return alertas.sort((a, b) => orden[a.nivel] - orden[b.nivel]);
+}
+
+export function etiquetaPeriodo(desde: string, hasta: string) {  const d = new Date(`${desde}T12:00:00`);
   const h = new Date(`${hasta}T12:00:00`);
   if (
     d.getMonth() === h.getMonth() &&

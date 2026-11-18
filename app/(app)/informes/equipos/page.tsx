@@ -5,9 +5,11 @@ import { KpiCard } from "@/components/kpi-card";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/data-table";
+import { ExportCsvButton } from "@/components/export-csv-button";
+import { Pagination } from "@/components/pagination";
 import { ExportPdfButton } from "@/components/export-pdf-button";
 import { getCuadrillas, getMovimientos, getTecnicos } from "@/lib/queries";
-import { formatFecha, fechaHaceDias, fechaHoy, getParam, mesLabel, numero } from "@/lib/utils";
+import { formatFecha, fechaHaceDias, fechaHoy, getParam, mesLabel, numero, paginar, parsePage } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +69,7 @@ export default async function InformeEquiposPage({
     cuadrilla: m.cuadrilla?.nombre ?? "—",
     estado: m.estado_recepcion,
     destino: m.destino_equipo,
+    evidencia: m.evidencia_url ?? "",
   }));
 
   const operativos = filtrados.filter((m) => m.estado_recepcion === "Operativo").length;
@@ -74,19 +77,38 @@ export default async function InformeEquiposPage({
   const revision = filtrados.filter((m) => m.estado_recepcion === "Para revisión").length;
   const stock = filtrados.filter((m) => m.destino_equipo === "Stock disponible").length;
 
+  const pagina = paginar(rows, parsePage(getParam(params, "page")), 15);
+
   return (
     <>
       <PageHeader
         title="Recuperación y movimiento de equipos"
         description="Trazabilidad completa por número de serie, cliente, cuadrilla, técnico, estado y destino."
         actions={
-          <ExportPdfButton
-            tipo="equipos"
-            equipos={filtrados}
-            periodo={periodo}
-            filtros={filtrosResumen}
-            label="Exportar manifiesto a PDF"
-          />
+          <>
+            <ExportCsvButton
+              filename="equipos"
+              rows={rows}
+              columns={[
+                { key: "fecha", label: "Fecha" },
+                { key: "serie", label: "N° Serie" },
+                { key: "cliente", label: "Cliente / Abonado" },
+                { key: "tipo", label: "Tipo" },
+                { key: "marca", label: "Marca / Modelo" },
+                { key: "tecnico", label: "Técnico" },
+                { key: "cuadrilla", label: "Cuadrilla" },
+                { key: "estado", label: "Estado" },
+                { key: "destino", label: "Destino" },
+              ]}
+            />
+            <ExportPdfButton
+              tipo="equipos"
+              equipos={filtrados}
+              periodo={periodo}
+              filtros={filtrosResumen}
+              label="Exportar manifiesto a PDF"
+            />
+          </>
         }
       />
 
@@ -144,9 +166,20 @@ export default async function InformeEquiposPage({
               { key: "cuadrilla", label: "Cuadrilla" },
               { key: "estado", label: "Estado", kind: "badge", align: "center" },
               { key: "destino", label: "Destino", kind: "badge", align: "center" },
+              { key: "evidencia", label: "Evidencia", kind: "external", align: "center", width: "90px" },
             ]}
-            rows={rows}
+            rows={pagina.items}
             emptyMessage="No se encontraron equipos con los filtros aplicados."
+          />
+          <Pagination
+            page={pagina.page}
+            totalPages={pagina.totalPages}
+            total={pagina.total}
+            desde={pagina.desde}
+            hasta={pagina.hasta}
+            basePath="/informes/equipos"
+            searchParams={params}
+            etiqueta="equipos"
           />
         </CardContent>
       </Card>

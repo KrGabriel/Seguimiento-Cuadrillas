@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Field, FormMessage } from "@/components/forms/form-field";
+import { EliminarDefinitivoButton } from "@/components/eliminar-definitivo-button";
 import { actualizarCuadrilla, crearCuadrilla } from "@/lib/actions";
 import { cuadrillaSchema, type CuadrillaInput } from "@/lib/schemas";
 import { ESTADOS_VEHICULO, type Cuadrilla } from "@/lib/types";
@@ -135,14 +136,26 @@ export function CuadrillaForm({
         </p>
       ) : null}
 
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={() => router.push("/cuadrillas")}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={formState.isSubmitting}>
-          {formState.isSubmitting ? <Loader2 className="animate-spin" /> : <Save />}
-          {cuadrilla ? "Guardar cambios" : "Crear cuadrilla"}
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {cuadrilla ? (
+          <EliminarDefinitivoButton
+            tipo="cuadrilla"
+            id={cuadrilla.id}
+            nombre={cuadrilla.nombre}
+            redirectTo="/cuadrillas"
+          />
+        ) : (
+          <span />
+        )}
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="ghost" onClick={() => router.push("/cuadrillas")}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={formState.isSubmitting}>
+            {formState.isSubmitting ? <Loader2 className="animate-spin" /> : <Save />}
+            {cuadrilla ? "Guardar cambios" : "Crear cuadrilla"}
+          </Button>
+        </div>
       </div>
     </form>
   );

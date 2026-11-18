@@ -5,6 +5,7 @@ import { KpiCard } from "@/components/kpi-card";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/data-table";
+import { ExportCsvButton } from "@/components/export-csv-button";
 import { ExportPdfButton } from "@/components/export-pdf-button";
 import { ComparativoChart } from "@/components/charts/comparativo-chart";
 import { CuadrillasBarChart } from "@/components/charts/cuadrillas-bar-chart";
@@ -191,13 +192,39 @@ export default async function InformeCuadrillasPage({
         title={seleccionada ? `Informe de cuadrilla · ${seleccionada.nombre}` : "Informes por cuadrilla"}
         description="Comparativo en 8 ejes: productividad, calidad, cumplimiento, rendimiento, materiales, reincidencia, vehículo y seguridad."
         actions={
-          <ExportPdfButton
-            tipo="cuadrillas"
-            filas={filas}
-            periodo={periodo}
-            cuadrillaFiltrada={seleccionada?.nombre}
-            label={seleccionada ? "Exportar informe de cuadrilla" : "Exportar informe comparativo"}
-          />
+          <>
+            <ExportCsvButton
+              filename={seleccionada ? `cuadrilla-${seleccionada.nombre}` : "cuadrillas-comparativo"}
+              rows={filas.map((f) => ({ ...f }))}
+              columns={[
+                { key: "cuadrilla", label: "Cuadrilla" },
+                { key: "productividad", label: "Productividad" },
+                { key: "instalaciones", label: "Instalaciones" },
+                { key: "reparaciones", label: "Reparaciones" },
+                { key: "ordenesAsignadas", label: "Órdenes asignadas" },
+                { key: "ordenesFinalizadas", label: "Órdenes finalizadas" },
+                { key: "cumplimiento", label: "Cumplimiento (%)" },
+                { key: "reclamos", label: "Reclamos" },
+                { key: "tasaReclamos", label: "Tasa reclamos (%)" },
+                { key: "materialesUtilizados", label: "Materiales utilizados" },
+                { key: "materialesRecuperados", label: "Materiales recuperados" },
+                { key: "desperdicio", label: "Desperdicio" },
+                { key: "recupero", label: "Recupero (%)" },
+                { key: "reincidenciaFallas", label: "Reincidencia" },
+                { key: "seguridad", label: "Eventos de seguridad" },
+                { key: "incumplimientos", label: "Incumplimientos" },
+                { key: "score", label: "Score" },
+                { key: "estadoVehiculo", label: "Estado vehículo" },
+              ]}
+            />
+            <ExportPdfButton
+              tipo="cuadrillas"
+              filas={filas}
+              periodo={periodo}
+              cuadrillaFiltrada={seleccionada?.nombre}
+              label={seleccionada ? "Exportar informe de cuadrilla" : "Exportar informe comparativo"}
+            />
+          </>
         }
       />
 

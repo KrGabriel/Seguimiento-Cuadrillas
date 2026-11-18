@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { DataTable } from "@/components/data-table";
+import { ExportCsvButton } from "@/components/export-csv-button";
+import { Pagination } from "@/components/pagination";
 import { getCuadrillas, getRegistrosDiarios, getTecnicos } from "@/lib/queries";
-import { finMes, getParam, inicioMes, mesActual } from "@/lib/utils";
+import { finMes, getParam, inicioMes, mesActual, paginar, parsePage } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -61,17 +63,33 @@ export default async function TecnicosPage({
     }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
+  const pagina = paginar(rows, parsePage(getParam(params, "page")), 12);
+
   return (
     <>
       <PageHeader
         title="Técnicos"
         description="Alta, edición, baja y reasignación de cuadrilla. Los registros históricos conservan la cuadrilla de cada jornada."
         actions={
-          <Button asChild>
+          <>
+            <ExportCsvButton
+              filename="tecnicos"
+              rows={rows}
+              columns={[
+                { key: "legajo", label: "Legajo" },
+                { key: "nombre", label: "Nombre completo" },
+                { key: "cuadrilla", label: "Cuadrilla actual" },
+                { key: "ingreso", label: "Ingreso" },
+                { key: "partes", label: "Partes del mes" },
+                { key: "estado", label: "Estado" },
+              ]}
+            />
+            <Button asChild>
             <Link href="/tecnicos/nuevo">
               <Plus /> Nuevo técnico
             </Link>
           </Button>
+          </>
         }
       />
 
@@ -139,7 +157,17 @@ export default async function TecnicosPage({
               { key: "partes", label: "Partes del mes", kind: "number", align: "right" },
               { key: "estado", label: "Estado", kind: "badge", align: "center" },
             ]}
-            rows={rows}
+            rows={pagina.items}
+          />
+          <Pagination
+            page={pagina.page}
+            totalPages={pagina.totalPages}
+            total={pagina.total}
+            desde={pagina.desde}
+            hasta={pagina.hasta}
+            basePath="/tecnicos"
+            searchParams={params}
+            etiqueta="técnicos"
           />
         </CardContent>
       </Card>
